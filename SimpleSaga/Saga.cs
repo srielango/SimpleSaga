@@ -2,31 +2,24 @@
 {
     public class Saga
     {
-        protected SagaContext Context { get; set; }
+        public Guid SagaId { get; set; }
+        public IList<IActivity> Activities { get; set; }
+        public SagaStatus Status { get; private set; }
+        public int CurrentActivity { get; set; }
+        public int LastActivity { get; set; }
+
+        //protected SagaContext Context { get; set; }
 
         public Saga()
         {
-            Context = new SagaContext()
-            {
-                SagaId = new Guid(),
-                Status = SagaStatus.NotStarted,
-                Activities = new List<IActivity>()
-            };
+            SagaId = new Guid();
+            Status = SagaStatus.NotStarted;
+            Activities = new List<IActivity>();
         }
 
         public IList<IActivity> GetActivities()
         {
-            return Context.Activities;
-        }
-
-        public SagaStatus Status
-        {
-            get => Context.Status;
-        }
-
-        public int CurrentActivity
-        {
-            get => Context.CurrentActivity;
+            return Activities;
         }
 
         private async Task<ActivityStatus> ExecuteActivities(CancellationToken cancellationToken)
@@ -34,11 +27,11 @@
             ActivityStatus activityStatus = ActivityStatus.Failed;
             IActivity activity;
 
-            for (Context.CurrentActivity = 0; Context.CurrentActivity < Context.Activities.Count; ++Context.CurrentActivity)
+            for (CurrentActivity = 0; CurrentActivity < Activities.Count; ++CurrentActivity)
             {
-                Context.LastActivity = Context.CurrentActivity;
+                LastActivity =  CurrentActivity;
 
-                activity = Context.Activities[Context.CurrentActivity];
+                activity = Activities[CurrentActivity];
 
                 try
                 {
@@ -64,13 +57,13 @@
             ActivityStatus activityStatus = ActivityStatus.Succeeded;
             IActivity activity;
 
-            Context.CurrentActivity--;
+            CurrentActivity--;
 
-            Context.Status = SagaStatus.Failed;
+            Status = SagaStatus.Failed;
 
-            for (; Context.CurrentActivity >= 0; --Context.CurrentActivity)
+            for (; CurrentActivity >= 0; --CurrentActivity)
             {
-                activity = Context.Activities[Context.CurrentActivity];
+                activity = Activities[CurrentActivity];
                 try
                 {
                     if(await activity.CompensateAsync() != ActivityStatus.Succeeded)
@@ -89,36 +82,36 @@
 
         public async Task<SagaStatus> Run(CancellationToken cancellationToken)
         {
-            if(Context.Activities.Count == 0)
+            if(Activities.Count == 0)
             {
-                return Context.Status;
+                return Status;
             }
 
-            Context.Status = SagaStatus.Running;
+            Status = SagaStatus.Running;
             ActivityStatus activityStatus;
 
             activityStatus = await ExecuteActivities(cancellationToken);
 
             if(activityStatus == ActivityStatus.Succeeded)
             {
-                Context.Status = SagaStatus.Succeeded;
-                return Context.Status;
+                Status = SagaStatus.Succeeded;
+                return Status;
             }
 
-            if(Context.CurrentActivity == 0)
+            if(CurrentActivity == 0)
             {
-                Context.Status = SagaStatus.Failed;
-                return Context.Status;
+                Status = SagaStatus.Failed;
+                return Status;
             }
 
             activityStatus = await CompensatingActivities();
 
             if(activityStatus == ActivityStatus.Failed)
             {
-                Context.Status = SagaStatus.UnexpectedError;
+                Status = SagaStatus.UnexpectedError;
             }
 
-            return Context.Status;
+            return Status;
         }
     }
 }

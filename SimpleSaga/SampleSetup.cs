@@ -9,33 +9,13 @@
             Console.WriteLine($"\nActivity {activityName} executing...");
             Console.Write("Enter Return status (Y=Succeeded, N=Failed) - ");
             var reply = Console.ReadLine();
-            if (reply != null)
-            {
-                reply = reply.Trim().ToLower();
-                if (reply == "y" || reply == "yes")
-                {
-                    status = ActivityStatus.Succeeded;
-                }
-                else
-                {
-                    status = ActivityStatus.Failed;
-                }
-            }
-            else
-            {
-                status = ActivityStatus.Failed;
-            }
+            status = GetStatus(reply);
 
-            if (status == ActivityStatus.Succeeded)
-            {
-                Console.WriteLine($"Activity {activityName} execution succeeded");
-            }
-            else
-            {
-                Console.WriteLine($"Activity {activityName} execution succeeded");
-            }
+            Console.WriteLine($"Activity {activityName} execution {status.ToString()}");
+
             return status;
         }
+
         protected ActivityStatus InteractiveCompensate(string activityName)
         {
             ActivityStatus status;
@@ -44,23 +24,44 @@
             Console.Write("Enter Return Status (Y=Succeeded, N=Failed)? ");
 
             var reply = Console.ReadLine();
-            if (reply != null)
-            {
-                reply = reply.Trim().ToLower();
-                if (reply == "y" || reply == "yes")
-                    status = ActivityStatus.Succeeded;
-                else
-                    status = ActivityStatus.Failed;
-            }
-            else
-                status = ActivityStatus.Failed;
-
-            if (status == ActivityStatus.Succeeded)
-                Console.WriteLine($"Activity {activityName} Compensation Succeeded.");
-            else
-                Console.WriteLine($"Activity {activityName} Compensation Failed!");
+            status = GetStatus(reply);
 
             return status;
+        }
+
+        protected async Task<ActivityStatus> ExecuteAsync(string name)
+        {
+            var task = Task.Run<ActivityStatus>(() =>
+            {
+                return InteractiveExecute(name);
+            });
+
+            return await task;
+        }
+
+        protected async Task<ActivityStatus> CompensateAsync(string name)
+        {
+            var task = Task.Run<ActivityStatus>(() =>
+            {
+                return InteractiveCompensate(name);
+            });
+
+            return await task;
+        }
+
+
+        private static ActivityStatus GetStatus(string? reply)
+        {
+            if (reply != null)
+            {
+                var cleanReply = reply.Trim().ToLower();
+                if (cleanReply == "y" || cleanReply == "yes")
+                {
+                    return ActivityStatus.Succeeded;
+                }
+            }
+
+            return ActivityStatus.Failed;
         }
     }
     public class Activity1 : InteractiveActivity, IActivity
@@ -69,22 +70,12 @@
 
         public async Task<ActivityStatus> CompensateAsync()
         {
-            var task = Task.Run<ActivityStatus>(() =>
-            {
-                return InteractiveCompensate(Name);
-            });
-
-            return await task;
+            return await CompensateAsync(Name);
         }
 
         public async Task<ActivityStatus> ExecuteAsync()
         {
-            var task = Task.Run<ActivityStatus>(() =>
-            {
-                return InteractiveExecute(Name);
-            });
-
-            return await task;
+            return await ExecuteAsync(Name);
         }
     }
 
@@ -94,23 +85,14 @@
 
         public async Task<ActivityStatus> CompensateAsync()
         {
-            var task = Task.Run<ActivityStatus>(() =>
-            {
-                return InteractiveCompensate(Name);
-            });
-
-            return await task;
+            return await CompensateAsync(Name);
         }
 
         public async Task<ActivityStatus> ExecuteAsync()
         {
-            var task = Task.Run<ActivityStatus>(() =>
-            {
-                return InteractiveExecute(Name);
-            });
-
-            return await task;
+            return await ExecuteAsync(Name);
         }
+
     }
 
     public class Activity3 : InteractiveActivity, IActivity
@@ -119,22 +101,13 @@
 
         public async Task<ActivityStatus> CompensateAsync()
         {
-            var task = Task.Run<ActivityStatus>(() =>
-            {
-                return InteractiveCompensate(Name);
-            });
-
-            return await task;
+            return await CompensateAsync(Name);
         }
 
         public async Task<ActivityStatus> ExecuteAsync()
         {
-            var task = Task.Run<ActivityStatus>(() =>
-            {
-                return InteractiveExecute(Name);
-            });
-
-            return await task;
+            return await ExecuteAsync(Name);
         }
+
     }
 }
